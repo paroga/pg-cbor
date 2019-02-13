@@ -1,0 +1,651 @@
+\set ECHO none
+--
+--  Test cbor datatype
+--
+CREATE TYPE cbor_encode_decode_test_result AS (decoded cbor, encoded bytea, parsed cbor);
+CREATE FUNCTION cbor_encode_decode_test(bytea) RETURNS cbor_encode_decode_test_result
+    AS $$ SELECT cbor_decode($1), cbor_encode(cbor_decode($1)), cbor_decode($1)::text::cbor$$
+    LANGUAGE SQL;
+--
+-- official test cases
+--
+SELECT * FROM cbor_encode_decode_test('\x00');
+ decoded | encoded | parsed 
+---------+---------+--------
+ 0       | \x00    | 0
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x01');
+ decoded | encoded | parsed 
+---------+---------+--------
+ 1       | \x01    | 1
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x0a');
+ decoded | encoded | parsed 
+---------+---------+--------
+ 10      | \x0a    | 10
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x17');
+ decoded | encoded | parsed 
+---------+---------+--------
+ 23      | \x17    | 23
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x1818');
+ decoded | encoded | parsed 
+---------+---------+--------
+ 24      | \x1818  | 24
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x1819');
+ decoded | encoded | parsed 
+---------+---------+--------
+ 25      | \x1819  | 25
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x1864');
+ decoded | encoded | parsed 
+---------+---------+--------
+ 100     | \x1864  | 100
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x1903e8');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ 1000    | \x1903e8 | 1000
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x1a000f4240');
+ decoded |   encoded    | parsed  
+---------+--------------+---------
+ 1000000 | \x1a000f4240 | 1000000
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x1b000000e8d4a51000');
+    decoded    |       encoded        |    parsed     
+---------------+----------------------+---------------
+ 1000000000000 | \x1b000000e8d4a51000 | 1000000000000
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x1bffffffffffffffff');
+       decoded        |       encoded        |        parsed        
+----------------------+----------------------+----------------------
+ 18446744073709551615 | \x1bffffffffffffffff | 18446744073709551615
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xc249010000000000000000');
+         decoded          |         encoded          |          parsed          
+--------------------------+--------------------------+--------------------------
+ 2(h'010000000000000000') | \xc249010000000000000000 | 2(h'010000000000000000')
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x3bffffffffffffffff');
+        decoded        |       encoded        |        parsed         
+-----------------------+----------------------+-----------------------
+ -18446744073709551616 | \x3bffffffffffffffff | -18446744073709551616
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xc349010000000000000000');
+         decoded          |         encoded          |          parsed          
+--------------------------+--------------------------+--------------------------
+ 3(h'010000000000000000') | \xc349010000000000000000 | 3(h'010000000000000000')
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x20');
+ decoded | encoded | parsed 
+---------+---------+--------
+ -1      | \x20    | -1
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x29');
+ decoded | encoded | parsed 
+---------+---------+--------
+ -10     | \x29    | -10
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x3863');
+ decoded | encoded | parsed 
+---------+---------+--------
+ -100    | \x3863  | -100
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x3903e7');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ -1000   | \x3903e7 | -1000
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf90000');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ 0.0     | \xf90000 | 0.0
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf98000');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ -0.0    | \xf98000 | -0.0
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf93c00');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ 1.0     | \xf93c00 | 1.0
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfb3ff199999999999a');
+ decoded |       encoded        | parsed 
+---------+----------------------+--------
+ 1.1     | \xfb3ff199999999999a | 1.1
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf93e00');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ 1.5     | \xf93e00 | 1.5
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf97bff');
+ decoded | encoded  | parsed  
+---------+----------+---------
+ 65504.0 | \xf97bff | 65504.0
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfa47c35000');
+ decoded  |   encoded    |  parsed  
+----------+--------------+----------
+ 100000.0 | \xfa47c35000 | 100000.0
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfa7f7fffff');
+   decoded   |   encoded    |   parsed    
+-------------+--------------+-------------
+ 3.40282e+38 | \xfa7f7fffff | 3.40282e+38
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfb7e37e43c8800759c');
+ decoded |       encoded        | parsed 
+---------+----------------------+--------
+ 1e+300  | \xfb7e37e43c8800759c | 1e+300
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf90001');
+   decoded   |   encoded    |   parsed    
+-------------+--------------+-------------
+ 5.96046e-08 | \xfa33800000 | 5.96046e-08
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf90400');
+   decoded   | encoded  |   parsed    
+-------------+----------+-------------
+ 6.10352e-05 | \xf90400 | 6.10352e-05
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf9c400');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ -4.0    | \xf9c400 | -4.0
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfbc010666666666666');
+ decoded |       encoded        | parsed 
+---------+----------------------+--------
+ -4.1    | \xfbc010666666666666 | -4.1
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf97c00');
+ decoded  | encoded  |  parsed  
+----------+----------+----------
+ Infinity | \xf97c00 | Infinity
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf97e00');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ NaN     | \xf97e00 | NaN
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf9fc00');
+  decoded  | encoded  |  parsed   
+-----------+----------+-----------
+ -Infinity | \xf9fc00 | -Infinity
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfa7f800000');
+ decoded  | encoded  |  parsed  
+----------+----------+----------
+ Infinity | \xf97c00 | Infinity
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfa7fc00000');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ NaN     | \xf97e00 | NaN
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfaff800000');
+  decoded  | encoded  |  parsed   
+-----------+----------+-----------
+ -Infinity | \xf9fc00 | -Infinity
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfb7ff0000000000000');
+ decoded  | encoded  |  parsed  
+----------+----------+----------
+ Infinity | \xf97c00 | Infinity
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfb7ff8000000000000');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ NaN     | \xf97e00 | NaN
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xfbfff0000000000000');
+  decoded  | encoded  |  parsed   
+-----------+----------+-----------
+ -Infinity | \xf9fc00 | -Infinity
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf4');
+ decoded | encoded | parsed 
+---------+---------+--------
+ false   | \xf4    | false
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf5');
+ decoded | encoded | parsed 
+---------+---------+--------
+ true    | \xf5    | true
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf6');
+ decoded | encoded | parsed 
+---------+---------+--------
+ null    | \xf6    | null
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf7');
+  decoded  | encoded |  parsed   
+-----------+---------+-----------
+ undefined | \xf7    | undefined
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf0');
+  decoded   | encoded |   parsed   
+------------+---------+------------
+ simple(16) | \xf0    | simple(16)
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf818');
+  decoded   | encoded |   parsed   
+------------+---------+------------
+ simple(24) | \xf818  | simple(24)
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xf8ff');
+   decoded   | encoded |   parsed    
+-------------+---------+-------------
+ simple(255) | \xf8ff  | simple(255)
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xc074323031332d30332d32315432303a30343a30305a');
+          decoded          |                    encoded                     |          parsed           
+---------------------------+------------------------------------------------+---------------------------
+ 0("2013-03-21T20:04:00Z") | \xc074323031332d30332d32315432303a30343a30305a | 0("2013-03-21T20:04:00Z")
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xc11a514b67b0');
+    decoded    |    encoded     |    parsed     
+---------------+----------------+---------------
+ 1(1363896240) | \xc11a514b67b0 | 1(1363896240)
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xc1fb41d452d9ec200000');
+    decoded    |        encoded         |    parsed     
+---------------+------------------------+---------------
+ 1(1.3639e+09) | \xc1fb41d452d9ec200000 | 1(1.3639e+09)
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xd74401020304');
+     decoded     |    encoded     |     parsed      
+-----------------+----------------+-----------------
+ 23(h'01020304') | \xd74401020304 | 23(h'01020304')
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xd818456449455446');
+      decoded      |      encoded       |      parsed       
+-------------------+--------------------+-------------------
+ 24(h'6449455446') | \xd818456449455446 | 24(h'6449455446')
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xd82076687474703a2f2f7777772e6578616d706c652e636f6d');
+           decoded            |                       encoded                        |            parsed            
+------------------------------+------------------------------------------------------+------------------------------
+ 32("http://www.example.com") | \xd82076687474703a2f2f7777772e6578616d706c652e636f6d | 32("http://www.example.com")
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x40');
+ decoded | encoded | parsed 
+---------+---------+--------
+ h''     | \x40    | h''
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x4401020304');
+   decoded   |   encoded    |   parsed    
+-------------+--------------+-------------
+ h'01020304' | \x4401020304 | h'01020304'
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x60');
+ decoded | encoded | parsed 
+---------+---------+--------
+ ""      | \x60    | ""
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x6161');
+ decoded | encoded | parsed 
+---------+---------+--------
+ "a"     | \x6161  | "a"
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x6449455446');
+ decoded |   encoded    | parsed 
+---------+--------------+--------
+ "IETF"  | \x6449455446 | "IETF"
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x62225c');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ "\"\\"  | \x62225c | "\"\\"
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x62c3bc');
+ decoded | encoded  | parsed 
+---------+----------+--------
+ "ü"     | \x62c3bc | "ü"
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x63e6b0b4');
+ decoded |  encoded   | parsed 
+---------+------------+--------
+ "水"    | \x63e6b0b4 | "水"
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x64f0908591');
+ decoded |   encoded    | parsed 
+---------+--------------+--------
+ "𐅑"     | \x64f0908591 | "𐅑"
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x80');
+ decoded | encoded | parsed 
+---------+---------+--------
+ []      | \x80    | []
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x83010203');
+  decoded  |  encoded   |  parsed   
+-----------+------------+-----------
+ [1, 2, 3] | \x83010203 | [1, 2, 3]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x8301820203820405');
+       decoded       |      encoded       |       parsed        
+---------------------+--------------------+---------------------
+ [1, [2, 3], [4, 5]] | \x8301820203820405 | [1, [2, 3], [4, 5]]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x98190102030405060708090a0b0c0d0e0f101112131415161718181819');
+                                           decoded                                           |                           encoded                            |                                           parsed                                            
+---------------------------------------------------------------------------------------------+--------------------------------------------------------------+---------------------------------------------------------------------------------------------
+ [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25] | \x98190102030405060708090a0b0c0d0e0f101112131415161718181819 | [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xa0');
+ decoded | encoded | parsed 
+---------+---------+--------
+ {}      | \xa0    | {}
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xa201020304');
+   decoded    |   encoded    |    parsed    
+--------------+--------------+--------------
+ {1: 2, 3: 4} | \xa201020304 | {1: 2, 3: 4}
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xa26161016162820203');
+        decoded        |       encoded        |        parsed         
+-----------------------+----------------------+-----------------------
+ {"a": 1, "b": [2, 3]} | \xa26161016162820203 | {"a": 1, "b": [2, 3]}
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x826161a161626163');
+      decoded      |      encoded       |      parsed       
+-------------------+--------------------+-------------------
+ ["a", {"b": "c"}] | \x826161a161626163 | ["a", {"b": "c"}]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xa56161614161626142616361436164614461656145');
+                      decoded                       |                   encoded                    |                       parsed                       
+----------------------------------------------------+----------------------------------------------+----------------------------------------------------
+ {"a": "A", "b": "B", "c": "C", "d": "D", "e": "E"} | \xa56161614161626142616361436164614461656145 | {"a": "A", "b": "B", "c": "C", "d": "D", "e": "E"}
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x5f42010243030405ff');
+    decoded    |    encoded     |    parsed     
+---------------+----------------+---------------
+ h'0102030405' | \x450102030405 | h'0102030405'
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x7f657374726561646d696e67ff');
+   decoded   |        encoded         |   parsed    
+-------------+------------------------+-------------
+ "streaming" | \x6973747265616d696e67 | "streaming"
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x9fff');
+ decoded | encoded | parsed 
+---------+---------+--------
+ []      | \x80    | []
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x9f018202039f0405ffff');
+       decoded       |      encoded       |       parsed        
+---------------------+--------------------+---------------------
+ [1, [2, 3], [4, 5]] | \x8301820203820405 | [1, [2, 3], [4, 5]]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x9f01820203820405ff');
+       decoded       |      encoded       |       parsed        
+---------------------+--------------------+---------------------
+ [1, [2, 3], [4, 5]] | \x8301820203820405 | [1, [2, 3], [4, 5]]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x83018202039f0405ff');
+       decoded       |      encoded       |       parsed        
+---------------------+--------------------+---------------------
+ [1, [2, 3], [4, 5]] | \x8301820203820405 | [1, [2, 3], [4, 5]]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x83019f0203ff820405');
+       decoded       |      encoded       |       parsed        
+---------------------+--------------------+---------------------
+ [1, [2, 3], [4, 5]] | \x8301820203820405 | [1, [2, 3], [4, 5]]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff');
+                                           decoded                                           |                           encoded                            |                                           parsed                                            
+---------------------------------------------------------------------------------------------+--------------------------------------------------------------+---------------------------------------------------------------------------------------------
+ [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25] | \x98190102030405060708090a0b0c0d0e0f101112131415161718181819 | [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xbf61610161629f0203ffff');
+        decoded        |       encoded        |        parsed         
+-----------------------+----------------------+-----------------------
+ {"a": 1, "b": [2, 3]} | \xa26161016162820203 | {"a": 1, "b": [2, 3]}
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\x826161bf61626163ff');
+      decoded      |      encoded       |      parsed       
+-------------------+--------------------+-------------------
+ ["a", {"b": "c"}] | \x826161a161626163 | ["a", {"b": "c"}]
+(1 row)
+
+SELECT * FROM cbor_encode_decode_test('\xbf6346756ef563416d7421ff');
+         decoded          |         encoded          |          parsed          
+--------------------------+--------------------------+--------------------------
+ {"Fun": true, "Amt": -2} | \xa26346756ef563416d7421 | {"Fun": true, "Amt": -2}
+(1 row)
+
+--
+-- Additional encoding tests
+--
+SELECT * FROM cbor_encode_decode_test('\x3bfffffffffffffffe');
+        decoded        |       encoded        |        parsed         
+-----------------------+----------------------+-----------------------
+ -18446744073709551615 | \x3bfffffffffffffffe | -18446744073709551615
+(1 row)
+
+--
+-- comparison functions tests
+--
+SELECT '1'::cbor = '1'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '1'::cbor <> '1'::cbor;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '1'::cbor < '1'::cbor;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '1'::cbor <= '1'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '1'::cbor > '1'::cbor;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '1'::cbor >= '1'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '1'::cbor = '2'::cbor;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '1'::cbor <> '2'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '1'::cbor < '2'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '1'::cbor <= '2'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '1'::cbor > '2'::cbor;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '1'::cbor >= '2'::cbor;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2'::cbor = '1'::cbor;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2'::cbor <> '1'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2'::cbor < '1'::cbor;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2'::cbor <= '1'::cbor;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2'::cbor > '1'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2'::cbor >= '1'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '0'::cbor < '[]'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '[]'::cbor < '{}'::cbor;
+ ?column? 
+----------
+ t
+(1 row)
+
+--
+-- hash function tests
+--
+SELECT cbor_hash('1'::cbor) = cbor_hash('1'::cbor);
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT cbor_hash('{"a": 1, "b": [2, 3]}'::cbor) = cbor_hash('{"a": 1, "b": [2, 3]}'::cbor);
+ ?column? 
+----------
+ t
+(1 row)
+
+ROLLBACK;

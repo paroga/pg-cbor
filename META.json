@@ -1,0 +1,44 @@
+{
+    "name": "cbor",
+    "abstract": "A Concise Binary Object Representation data type",
+    "description": "Provides a data type the enforces the Concise Binary Object Representation format.",
+    "version": "0.1.0",
+    "maintainer": [
+       "Patrick Gansterer <paroga@paroga.com>"
+    ],
+    "license": "postgresql",
+    "provides": {
+       "cbor": {
+          "abstract": "A Concise Binary Object Representation data type",
+          "file": "sql/cbor.sql",
+          "docfile": "doc/cbor.md",
+          "version": "0.1.0"
+       }
+    },
+    "prereqs": {
+       "runtime": {
+          "requires": {
+             "PostgreSQL": "9.4.0"
+          }
+       }
+    },
+    "resources": {
+       "bugtracker": {
+          "web": "http://github.com/paroga/pg-cbor/issues/"
+       },
+       "repository": {
+         "url":  "git://github.com/paroga/pg-cbor.git",
+         "web":  "http://github.com/paroga/pg-cbor/",
+         "type": "git"
+       }
+    },
+    "generated_by": "Patrick Gansterer",
+    "meta-spec": {
+       "version": "1.0.0",
+       "url": "http://pgxn.org/meta/spec.txt"
+    },
+    "tags": [
+       "cbor",
+       "rfc7049"
+    ]
+ }

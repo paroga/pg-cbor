@@ -1,0 +1,5 @@
+# cbor extension
+comment = 'A Concise Binary Object Representation data type'
+default_version = '0.1.0'
+module_pathname = '$libdir/cbor'
+relocatable = true
