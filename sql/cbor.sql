@@ -150,6 +150,109 @@ CREATE OPERATOR <> (
 	RESTRICT = neqsel, JOIN = neqjoinsel
 );
 
+CREATE OPERATOR @> (
+	LEFTARG = cbor, RIGHTARG = cbor, PROCEDURE = cbor_contains,
+	COMMUTATOR = '<@',
+	RESTRICT = contsel, JOIN = contjoinsel
+);
+
+CREATE OPERATOR <@ (
+	LEFTARG = cbor, RIGHTARG = cbor, PROCEDURE = cbor_contained,
+	COMMUTATOR = '@>',
+	RESTRICT = contsel, JOIN = contjoinsel
+);
+
+-- these are obsolete/deprecated:
+CREATE OPERATOR @ (
+	LEFTARG = cbor, RIGHTARG = cbor, PROCEDURE = cbor_contains,
+	COMMUTATOR = '~',
+	RESTRICT = contsel, JOIN = contjoinsel
+);
+
+CREATE OPERATOR ~ (
+	LEFTARG = cbor, RIGHTARG = cbor, PROCEDURE = cbor_contained,
+	COMMUTATOR = '@',
+	RESTRICT = contsel, JOIN = contjoinsel
+);
+
+
+
+CREATE FUNCTION cbor_exists(cbor,text)
+RETURNS bool
+AS 'cbor'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR ? (
+	LEFTARG = cbor,
+	RIGHTARG = text,
+	PROCEDURE = cbor_exists,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION cbor_exists_any(cbor,text[])
+RETURNS bool
+AS 'cbor'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR ?| (
+	LEFTARG = cbor,
+	RIGHTARG = text[],
+	PROCEDURE = cbor_exists_any,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION cbor_exists_all(cbor,text[])
+RETURNS bool
+AS 'cbor'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR ?& (
+	LEFTARG = cbor,
+	RIGHTARG = text[],
+	PROCEDURE = cbor_exists_all,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+
+
+CREATE FUNCTION cbor_object_field(cbor, text)
+RETURNS cbor
+AS 'cbor'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION cbor_array_element(cbor, int4)
+RETURNS cbor
+AS 'cbor'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION cbor_extract_path(cbor, text[])
+RETURNS cbor
+AS 'cbor'
+LANGUAGE C IMMUTABLE STRICT;
+
+
+
+CREATE OPERATOR -> (
+	LEFTARG = cbor,
+	RIGHTARG = text,
+	PROCEDURE = cbor_object_field
+);
+
+CREATE OPERATOR -> (
+	LEFTARG = cbor,
+	RIGHTARG = int4,
+	PROCEDURE = cbor_array_element
+);
+
+CREATE OPERATOR #> (
+	LEFTARG = cbor,
+	RIGHTARG = text[],
+	PROCEDURE = cbor_extract_path
+);
+
 
 -- Create the operator classes for indexing
 
